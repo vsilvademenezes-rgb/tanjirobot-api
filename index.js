@@ -1,20 +1,12 @@
 const express = require("express");
 const axios = require("axios");
-const path = require("path");
 
 const {
     createCanvas,
-    loadImage,
-    GlobalFonts
+    loadImage
 } = require("@napi-rs/canvas");
 
 const app = express();
-
-// CARREGAR FONTE
-GlobalFonts.registerFromPath(
-    path.join(process.cwd(), "Arial.ttf"),
-    "Arial"
-);
 
 app.get("/perfil.png", async (req, res) => {
 
@@ -98,11 +90,11 @@ app.get("/perfil.png", async (req, res) => {
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // COR TEXTO
+        // TEXTOS
         ctx.fillStyle = "#ffffff";
 
         // NOME
-        ctx.font = "48px Arial";
+        ctx.font = "bold 48px sans-serif";
 
         ctx.fillText(
             nome.toUpperCase(),
@@ -111,7 +103,7 @@ app.get("/perfil.png", async (req, res) => {
         );
 
         // INFO
-        ctx.font = "28px Arial";
+        ctx.font = "28px sans-serif";
 
         ctx.fillText(
             "ID: " + id,
@@ -126,7 +118,7 @@ app.get("/perfil.png", async (req, res) => {
         );
 
         // LEVEL
-        ctx.font = "bold 40px Arial";
+        ctx.font = "bold 40px sans-serif";
 
         ctx.fillText(
             "LEVEL",
@@ -134,7 +126,7 @@ app.get("/perfil.png", async (req, res) => {
             390
         );
 
-        ctx.font = "bold 65px Arial";
+        ctx.font = "bold 65px sans-serif";
 
         ctx.fillText(
             lvl,
@@ -143,7 +135,7 @@ app.get("/perfil.png", async (req, res) => {
         );
 
         // XP
-        ctx.font = "bold 40px Arial";
+        ctx.font = "bold 40px sans-serif";
 
         ctx.fillText(
             "XP",
@@ -151,7 +143,7 @@ app.get("/perfil.png", async (req, res) => {
             390
         );
 
-        ctx.font = "26px Arial";
+        ctx.font = "26px sans-serif";
 
         ctx.fillText(
             xp + " / " + maxxp,
@@ -194,7 +186,7 @@ app.get("/perfil.png", async (req, res) => {
         // SOBRE MIM
         ctx.fillStyle = "#ffffff";
 
-        ctx.font = "40px Arial";
+        ctx.font = "bold 40px sans-serif";
 
         ctx.fillText(
             "SOBRE MIM",
@@ -202,7 +194,7 @@ app.get("/perfil.png", async (req, res) => {
             555
         );
 
-        ctx.font = "24px Arial";
+        ctx.font = "24px sans-serif";
 
         let sobreTexto = sobre;
 
