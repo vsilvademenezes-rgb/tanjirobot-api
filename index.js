@@ -35,7 +35,7 @@ app.get("/perfil.png", async (req, res) => {
         ctx.drawImage(bg, 0, 0, 1000, 600);
 
         // OVERLAY
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillStyle = "rgba(0,0,0,0.65)";
         ctx.fillRect(0, 300, 1000, 300);
 
         // AVATAR
@@ -90,11 +90,11 @@ app.get("/perfil.png", async (req, res) => {
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // TEXTOS
+        // COR TEXTO
         ctx.fillStyle = "#ffffff";
 
         // NOME
-        ctx.font = "bold 48px sans-serif";
+        ctx.font = "bold 48px DejaVu Sans";
 
         ctx.fillText(
             nome.toUpperCase(),
@@ -103,7 +103,7 @@ app.get("/perfil.png", async (req, res) => {
         );
 
         // INFO
-        ctx.font = "28px sans-serif";
+        ctx.font = "28px DejaVu Sans";
 
         ctx.fillText(
             "ID: " + id,
@@ -118,7 +118,7 @@ app.get("/perfil.png", async (req, res) => {
         );
 
         // LEVEL
-        ctx.font = "bold 40px sans-serif";
+        ctx.font = "bold 40px DejaVu Sans";
 
         ctx.fillText(
             "LEVEL",
@@ -126,16 +126,16 @@ app.get("/perfil.png", async (req, res) => {
             390
         );
 
-        ctx.font = "bold 65px sans-serif";
+        ctx.font = "bold 65px DejaVu Sans";
 
         ctx.fillText(
             lvl,
-            690,
+            700,
             470
         );
 
         // XP
-        ctx.font = "bold 40px sans-serif";
+        ctx.font = "bold 40px DejaVu Sans";
 
         ctx.fillText(
             "XP",
@@ -143,7 +143,7 @@ app.get("/perfil.png", async (req, res) => {
             390
         );
 
-        ctx.font = "26px sans-serif";
+        ctx.font = "26px DejaVu Sans";
 
         ctx.fillText(
             xp + " / " + maxxp,
@@ -186,7 +186,7 @@ app.get("/perfil.png", async (req, res) => {
         // SOBRE MIM
         ctx.fillStyle = "#ffffff";
 
-        ctx.font = "bold 40px sans-serif";
+        ctx.font = "40px DejaVu Sans";
 
         ctx.fillText(
             "SOBRE MIM",
@@ -194,7 +194,7 @@ app.get("/perfil.png", async (req, res) => {
             555
         );
 
-        ctx.font = "24px sans-serif";
+        ctx.font = "24px DejaVu Sans";
 
         let sobreTexto = sobre;
 
