@@ -1,8 +1,19 @@
 const express = require("express");
 const axios = require("axios");
-const { createCanvas, loadImage } = require("@napi-rs/canvas");
+
+const {
+    createCanvas,
+    loadImage,
+    GlobalFonts
+} = require("@napi-rs/canvas");
 
 const app = express();
+
+// FONTE PADRÃO
+GlobalFonts.registerFromPath(
+    "./Arial.ttf",
+    "Arial"
+);
 
 app.get("/perfil.png", async (req, res) => {
 
@@ -19,7 +30,6 @@ app.get("/perfil.png", async (req, res) => {
             avatar = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
-        // CANVAS
         const canvas = createCanvas(1000, 600);
         const ctx = canvas.getContext("2d");
 
@@ -31,13 +41,11 @@ app.get("/perfil.png", async (req, res) => {
         ctx.drawImage(bg, 0, 0, 1000, 600);
 
         // OVERLAY
-        ctx.fillStyle = "rgba(0,0,0,0.65)";
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fillRect(0, 300, 1000, 300);
 
         // AVATAR
-        let avatarURL = avatar;
-
-        avatarURL = avatarURL
+        const avatarURL = avatar
             .replace(".webp", ".png")
             .split("?")[0];
 
@@ -51,6 +59,7 @@ app.get("/perfil.png", async (req, res) => {
         ctx.save();
 
         ctx.beginPath();
+
         ctx.arc(
             avX + radius,
             avY + radius,
@@ -72,7 +81,7 @@ app.get("/perfil.png", async (req, res) => {
 
         ctx.restore();
 
-        // BORDA AVATAR
+        // BORDA
         ctx.beginPath();
 
         ctx.arc(
@@ -87,9 +96,11 @@ app.get("/perfil.png", async (req, res) => {
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // NOME
+        // TEXTO
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 48px sans-serif";
+
+        // NOME
+        ctx.font = "48px Arial";
 
         ctx.fillText(
             nome.toUpperCase(),
@@ -98,7 +109,7 @@ app.get("/perfil.png", async (req, res) => {
         );
 
         // INFO
-        ctx.font = "28px sans-serif";
+        ctx.font = "28px Arial";
 
         ctx.fillText(
             "ID: " + id,
@@ -113,24 +124,24 @@ app.get("/perfil.png", async (req, res) => {
         );
 
         // LEVEL
-        ctx.font = "bold 38px sans-serif";
+        ctx.font = "bold 40px Arial";
 
         ctx.fillText(
             "LEVEL",
-            690,
+            650,
             390
         );
 
-        ctx.font = "bold 65px sans-serif";
+        ctx.font = "bold 65px Arial";
 
         ctx.fillText(
             lvl,
-            720,
+            690,
             470
         );
 
         // XP
-        ctx.font = "bold 38px sans-serif";
+        ctx.font = "bold 40px Arial";
 
         ctx.fillText(
             "XP",
@@ -138,11 +149,11 @@ app.get("/perfil.png", async (req, res) => {
             390
         );
 
-        ctx.font = "26px sans-serif";
+        ctx.font = "26px Arial";
 
         ctx.fillText(
             xp + " / " + maxxp,
-            810,
+            790,
             470
         );
 
@@ -158,7 +169,6 @@ app.get("/perfil.png", async (req, res) => {
                 1
             );
 
-        // FUNDO BARRA
         ctx.fillStyle = "#2b2b2b";
 
         ctx.fillRect(
@@ -168,7 +178,6 @@ app.get("/perfil.png", async (req, res) => {
             barHeight
         );
 
-        // XP
         ctx.fillStyle = "#00ff88";
 
         ctx.fillRect(
@@ -178,29 +187,31 @@ app.get("/perfil.png", async (req, res) => {
             barHeight
         );
 
-        // SOBRE MIM
+        // SOBRE
         ctx.fillStyle = "#ffffff";
 
-        ctx.font = "bold 40px sans-serif";
+        ctx.font = "40px Arial";
 
         ctx.fillText(
             "SOBRE MIM",
-            25,
+            20,
             555
         );
 
-        ctx.font = "24px sans-serif";
+        ctx.font = "24px Arial";
 
         let sobreTexto = sobre;
 
-        if (sobreTexto.length > 65) {
+        if (sobreTexto.length > 60) {
+
             sobreTexto =
-                sobreTexto.substring(0, 62) + "...";
+                sobreTexto.substring(0, 57) + "...";
+
         }
 
         ctx.fillText(
             sobreTexto,
-            25,
+            20,
             590
         );
 
