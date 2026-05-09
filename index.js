@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const path = require("path");
 
 const {
     createCanvas,
@@ -9,9 +10,9 @@ const {
 
 const app = express();
 
-// FONTE PADRÃO
+// CARREGAR FONTE
 GlobalFonts.registerFromPath(
-    "./Arial.ttf",
+    path.join(process.cwd(), "Arial.ttf"),
     "Arial"
 );
 
@@ -30,6 +31,7 @@ app.get("/perfil.png", async (req, res) => {
             avatar = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
+        // CANVAS
         const canvas = createCanvas(1000, 600);
         const ctx = canvas.getContext("2d");
 
@@ -81,7 +83,7 @@ app.get("/perfil.png", async (req, res) => {
 
         ctx.restore();
 
-        // BORDA
+        // BORDA AVATAR
         ctx.beginPath();
 
         ctx.arc(
@@ -96,7 +98,7 @@ app.get("/perfil.png", async (req, res) => {
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // TEXTO
+        // COR TEXTO
         ctx.fillStyle = "#ffffff";
 
         // NOME
@@ -169,6 +171,7 @@ app.get("/perfil.png", async (req, res) => {
                 1
             );
 
+        // FUNDO BARRA
         ctx.fillStyle = "#2b2b2b";
 
         ctx.fillRect(
@@ -178,6 +181,7 @@ app.get("/perfil.png", async (req, res) => {
             barHeight
         );
 
+        // XP BAR
         ctx.fillStyle = "#00ff88";
 
         ctx.fillRect(
@@ -187,7 +191,7 @@ app.get("/perfil.png", async (req, res) => {
             barHeight
         );
 
-        // SOBRE
+        // SOBRE MIM
         ctx.fillStyle = "#ffffff";
 
         ctx.font = "40px Arial";
@@ -215,7 +219,7 @@ app.get("/perfil.png", async (req, res) => {
             590
         );
 
-        // ENVIAR
+        // ENVIAR IMAGEM
         res.setHeader(
             "Content-Type",
             "image/png"
