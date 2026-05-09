@@ -1,156 +1,226 @@
 const express = require("express");
-const PImage = require("pureimage");
 const axios = require("axios");
-const stream = require("stream");
+const { createCanvas, loadImage } = require("@napi-rs/canvas");
 
 const app = express();
 
-app.get("/perfil", async (req, res) => {
-
-    const {
-        nome = "Membro",
-        iene = "0",
-        id = "000",
-        lvl = "1",
-        xp = "0",
-        maxxp = "1000",
-        sobre = "Use /sobremim",
-        avatar = ""
-    } = req.query;
-
-    const img = PImage.make(1000, 600);
-    const ctx = img.getContext("2d");
+app.get("/perfil.png", async (req, res) => {
 
     try {
 
+        const {
+            nome = "Membro",
+            iene = "0",
+            id = "000000",
+            lvl = "1",
+            xp = "0",
+            maxxp = "1000",
+            sobre = "Use /sobremim",
+            avatar = "https://cdn.discordapp.com/embed/avatars/0.png"
+        } = req.query;
+
+        // CANVAS
+        const canvas = createCanvas(1000, 600);
+        const ctx = canvas.getContext("2d");
+
         // FUNDO
-        const bgResp = await axios.get(
-            "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg",
-            { responseType: "arraybuffer" }
+        const bg = await loadImage(
+            "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg"
         );
 
-        const bgImg = await PImage.decodeJPEGFromStream(
-            stream.Readable.from(bgResp.data)
-        );
-
-        ctx.drawImage(bgImg, 0, 0, 1000, 600);
+        ctx.drawImage(bg, 0, 0, 1000, 600);
 
         // OVERLAY
-        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillStyle = "rgba(0,0,0,0.65)";
         ctx.fillRect(0, 300, 1000, 300);
 
-        // AVATAR REDONDO
-        try {
+        // AVATAR
+        let avatarURL = avatar;
 
-            let avatarURL;
+        avatarURL = avatarURL
+            .replace(".webp", ".png")
+            .split("?")[0];
 
-            if (!avatar || avatar === "]") {
+        const avatarImg = await loadImage(avatarURL);
 
-                avatarURL = "https://cdn.discordapp.com/embed/avatars/0.png";
+        const avX = 30;
+        const avY = 320;
+        const avSize = 160;
+        const radius = avSize / 2;
 
-            } else {
+        ctx.save();
 
-                avatarURL = avatar
-                    .replace(".webp", ".png")
-                    .split("?")[0];
+        ctx.beginPath();
+        ctx.arc(
+            avX + radius,
+            avY + radius,
+            radius,
+            0,
+            Math.PI * 2
+        );
 
-            }
+        ctx.closePath();
+        ctx.clip();
 
-            console.log("Avatar URL:", avatarURL);
+        ctx.drawImage(
+            avatarImg,
+            avX,
+            avY,
+            avSize,
+            avSize
+        );
 
-            const avResp = await axios.get(avatarURL, {
-                responseType: "arraybuffer"
-            });
+        ctx.restore();
 
-            const avImg = await PImage.decodePNGFromStream(
-                stream.Readable.from(avResp.data)
-            );
+        // BORDA AVATAR
+        ctx.beginPath();
 
-            console.log("Avatar carregado");
+        ctx.arc(
+            avX + radius,
+            avY + radius,
+            radius,
+            0,
+            Math.PI * 2
+        );
 
-            const avX = 30;
-            const avY = 320;
-            const size = 150;
-            const radius = size / 2;
-
-            ctx.save();
-
-            ctx.beginPath();
-            ctx.arc(
-                avX + radius,
-                avY + radius,
-                radius,
-                0,
-                Math.PI * 2,
-                true
-            );
-
-            ctx.closePath();
-            ctx.clip();
-
-            ctx.drawImage(avImg, avX, avY, size, size);
-
-            ctx.restore();
-
-        } catch (eav) {
-
-            console.log("Erro avatar:");
-            console.log(eav);
-
-            ctx.fillStyle = "#555";
-            ctx.fillRect(30, 320, 150, 150);
-
-        }
-
-        // TEXTOS
-        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 6;
+        ctx.stroke();
 
         // NOME
-        ctx.font = "50pt sans-serif";
-        ctx.fillText(nome.toUpperCase(), 210, 380);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 48px sans-serif";
+
+        ctx.fillText(
+            nome.toUpperCase(),
+            220,
+            380
+        );
 
         // INFO
-        ctx.font = "30pt sans-serif";
-        ctx.fillText("ID: " + id, 210, 430);
-        ctx.fillText("IENE: " + iene, 210, 480);
+        ctx.font = "28px sans-serif";
+
+        ctx.fillText(
+            "ID: " + id,
+            220,
+            430
+        );
+
+        ctx.fillText(
+            "IENE: " + iene,
+            220,
+            475
+        );
 
         // LEVEL
-        ctx.font = "40pt sans-serif";
-        ctx.fillText("LEVEL", 650, 430);
+        ctx.font = "bold 38px sans-serif";
 
-        ctx.font = "55pt sans-serif";
-        ctx.fillText(lvl, 700, 500);
+        ctx.fillText(
+            "LEVEL",
+            690,
+            390
+        );
+
+        ctx.font = "bold 65px sans-serif";
+
+        ctx.fillText(
+            lvl,
+            720,
+            470
+        );
 
         // XP
-        ctx.font = "40pt sans-serif";
-        ctx.fillText("XP", 880, 430);
+        ctx.font = "bold 38px sans-serif";
 
-        ctx.font = "30pt sans-serif";
-        ctx.fillText(xp + " / " + maxxp, 820, 500);
+        ctx.fillText(
+            "XP",
+            860,
+            390
+        );
+
+        ctx.font = "26px sans-serif";
+
+        ctx.fillText(
+            xp + " / " + maxxp,
+            810,
+            470
+        );
+
+        // BARRA XP
+        const barX = 650;
+        const barY = 520;
+        const barWidth = 280;
+        const barHeight = 25;
+
+        const porcentagem =
+            Math.min(
+                Number(xp) / Number(maxxp),
+                1
+            );
+
+        // FUNDO BARRA
+        ctx.fillStyle = "#2b2b2b";
+
+        ctx.fillRect(
+            barX,
+            barY,
+            barWidth,
+            barHeight
+        );
+
+        // XP
+        ctx.fillStyle = "#00ff88";
+
+        ctx.fillRect(
+            barX,
+            barY,
+            barWidth * porcentagem,
+            barHeight
+        );
 
         // SOBRE MIM
-        ctx.font = "45pt sans-serif";
-        ctx.fillText("SOBRE MIM", 20, 560);
+        ctx.fillStyle = "#ffffff";
 
-        ctx.font = "25pt sans-serif";
+        ctx.font = "bold 40px sans-serif";
 
-        const sobreLimpo =
-            sobre.length > 60
-                ? sobre.substring(0, 57) + "..."
-                : sobre;
+        ctx.fillText(
+            "SOBRE MIM",
+            25,
+            555
+        );
 
-        ctx.fillText(sobreLimpo, 20, 595);
+        ctx.font = "24px sans-serif";
 
-        // ENVIAR IMAGEM
-        res.setHeader("Content-Type", "image/png");
+        let sobreTexto = sobre;
 
-        await PImage.encodePNGToStream(img, res);
+        if (sobreTexto.length > 65) {
+            sobreTexto =
+                sobreTexto.substring(0, 62) + "...";
+        }
 
-    } catch (e) {
+        ctx.fillText(
+            sobreTexto,
+            25,
+            590
+        );
 
-        console.log(e);
+        // ENVIAR
+        res.setHeader(
+            "Content-Type",
+            "image/png"
+        );
 
-        res.status(500).send("Erro interno na API");
+        res.send(
+            canvas.toBuffer("image/png")
+        );
+
+    } catch (err) {
+
+        console.log(err);
+
+        res.status(500).send(
+            "Erro ao gerar imagem"
+        );
 
     }
 
