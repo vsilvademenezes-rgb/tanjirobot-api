@@ -1,18 +1,6 @@
 const express = require("express");
 
-const {
-    createCanvas,
-    loadImage,
-    GlobalFonts
-} = require("@napi-rs/canvas");
-
 const app = express();
-
-// USA FONTE DO PRÓPRIO LINUX DA VERCEL
-GlobalFonts.registerFromPath(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "Arial"
-);
 
 app.get("/perfil.png", async (req, res) => {
 
@@ -29,219 +17,191 @@ app.get("/perfil.png", async (req, res) => {
             avatar = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
-        // CANVAS
-        const canvas = createCanvas(1000, 600);
-        const ctx = canvas.getContext("2d");
-
-        // FUNDO
-        const bg = await loadImage(
-            "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg"
-        );
-
-        ctx.drawImage(bg, 0, 0, 1000, 600);
-
-        // OVERLAY
-        ctx.fillStyle = "rgba(0,0,0,0.65)";
-        ctx.fillRect(0, 300, 1000, 300);
-
-        // AVATAR
-        try {
-
-            const avatarURL = avatar
-                .replace(".webp", ".png")
-                .split("?")[0];
-
-            const avatarImg = await loadImage(avatarURL);
-
-            const avX = 30;
-            const avY = 320;
-            const avSize = 160;
-            const radius = avSize / 2;
-
-            ctx.save();
-
-            ctx.beginPath();
-
-            ctx.arc(
-                avX + radius,
-                avY + radius,
-                radius,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.closePath();
-            ctx.clip();
-
-            ctx.drawImage(
-                avatarImg,
-                avX,
-                avY,
-                avSize,
-                avSize
-            );
-
-            ctx.restore();
-
-            // BORDA
-            ctx.beginPath();
-
-            ctx.arc(
-                avX + radius,
-                avY + radius,
-                radius,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 6;
-            ctx.stroke();
-
-        } catch (e) {
-
-            console.log("Erro avatar:", e);
-
-        }
-
-        // TEXTO
-        ctx.fillStyle = "#ffffff";
-
-        // NOME
-        ctx.font = "bold 48px Arial";
-
-        ctx.fillText(
-            nome.toUpperCase(),
-            220,
-            380
-        );
-
-        // INFO
-        ctx.font = "28px Arial";
-
-        ctx.fillText(
-            "ID: " + id,
-            220,
-            430
-        );
-
-        ctx.fillText(
-            "IENE: " + iene,
-            220,
-            475
-        );
-
-        // LEVEL
-        ctx.font = "bold 40px Arial";
-
-        ctx.fillText(
-            "LEVEL",
-            650,
-            390
-        );
-
-        ctx.font = "bold 65px Arial";
-
-        ctx.fillText(
-            lvl,
-            700,
-            470
-        );
-
-        // XP
-        ctx.font = "bold 40px Arial";
-
-        ctx.fillText(
-            "XP",
-            860,
-            390
-        );
-
-        ctx.font = "26px Arial";
-
-        ctx.fillText(
-            xp + " / " + maxxp,
-            790,
-            470
-        );
-
-        // BARRA XP
-        const barX = 650;
-        const barY = 520;
-        const barWidth = 280;
-        const barHeight = 25;
-
         const porcentagem =
             Math.min(
                 Number(xp) / Number(maxxp),
                 1
-            );
+            ) * 280;
 
-        // FUNDO BARRA
-        ctx.fillStyle = "#2b2b2b";
+        const svg = `
+<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
 
-        ctx.fillRect(
-            barX,
-            barY,
-            barWidth,
-            barHeight
-        );
+    <!-- FUNDO -->
+    <image
+        href="https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg"
+        width="1000"
+        height="600"
+    />
 
-        // XP BAR
-        ctx.fillStyle = "#00ff88";
+    <!-- OVERLAY -->
+    <rect
+        x="0"
+        y="300"
+        width="1000"
+        height="300"
+        fill="rgba(0,0,0,0.65)"
+    />
 
-        ctx.fillRect(
-            barX,
-            barY,
-            barWidth * porcentagem,
-            barHeight
-        );
+    <!-- AVATAR -->
+    <defs>
+        <clipPath id="avatarClip">
+            <circle cx="110" cy="400" r="80"/>
+        </clipPath>
+    </defs>
 
-        // SOBRE
-        ctx.fillStyle = "#ffffff";
+    <image
+        href="${avatar}"
+        x="30"
+        y="320"
+        width="160"
+        height="160"
+        clip-path="url(#avatarClip)"
+    />
 
-        ctx.font = "40px Arial";
+    <!-- BORDA AVATAR -->
+    <circle
+        cx="110"
+        cy="400"
+        r="80"
+        fill="none"
+        stroke="white"
+        stroke-width="6"
+    />
 
-        ctx.fillText(
-            "SOBRE MIM",
-            20,
-            555
-        );
+    <!-- NOME -->
+    <text
+        x="220"
+        y="380"
+        fill="white"
+        font-size="48"
+        font-family="Arial"
+        font-weight="bold"
+    >
+        ${nome.toUpperCase()}
+    </text>
 
-        ctx.font = "24px Arial";
+    <!-- INFO -->
+    <text
+        x="220"
+        y="430"
+        fill="white"
+        font-size="28"
+        font-family="Arial"
+    >
+        ID: ${id}
+    </text>
 
-        let sobreTexto = sobre;
+    <text
+        x="220"
+        y="475"
+        fill="white"
+        font-size="28"
+        font-family="Arial"
+    >
+        IENE: ${iene}
+    </text>
 
-        if (sobreTexto.length > 60) {
+    <!-- LEVEL -->
+    <text
+        x="650"
+        y="390"
+        fill="white"
+        font-size="40"
+        font-family="Arial"
+        font-weight="bold"
+    >
+        LEVEL
+    </text>
 
-            sobreTexto =
-                sobreTexto.substring(0, 57) + "...";
+    <text
+        x="700"
+        y="470"
+        fill="white"
+        font-size="65"
+        font-family="Arial"
+        font-weight="bold"
+    >
+        ${lvl}
+    </text>
 
-        }
+    <!-- XP -->
+    <text
+        x="860"
+        y="390"
+        fill="white"
+        font-size="40"
+        font-family="Arial"
+        font-weight="bold"
+    >
+        XP
+    </text>
 
-        ctx.fillText(
-            sobreTexto,
-            20,
-            590
-        );
+    <text
+        x="790"
+        y="470"
+        fill="white"
+        font-size="26"
+        font-family="Arial"
+    >
+        ${xp} / ${maxxp}
+    </text>
 
-        // ENVIAR
+    <!-- BARRA XP -->
+    <rect
+        x="650"
+        y="520"
+        width="280"
+        height="25"
+        rx="10"
+        fill="#2b2b2b"
+    />
+
+    <rect
+        x="650"
+        y="520"
+        width="${porcentagem}"
+        height="25"
+        rx="10"
+        fill="#00ff88"
+    />
+
+    <!-- SOBRE -->
+    <text
+        x="20"
+        y="555"
+        fill="white"
+        font-size="40"
+        font-family="Arial"
+        font-weight="bold"
+    >
+        SOBRE MIM
+    </text>
+
+    <text
+        x="20"
+        y="590"
+        fill="white"
+        font-size="24"
+        font-family="Arial"
+    >
+        ${sobre}
+    </text>
+
+</svg>
+`;
+
         res.setHeader(
             "Content-Type",
-            "image/png"
+            "image/svg+xml"
         );
 
-        res.send(
-            canvas.toBuffer("image/png")
-        );
+        res.send(svg);
 
     } catch (err) {
 
         console.log(err);
 
-        res.status(500).send(
-            "Erro ao gerar imagem"
-        );
+        res.status(500).send("Erro");
 
     }
 
