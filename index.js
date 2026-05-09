@@ -1,4 +1,3 @@
-cat <<EOF > index.js
 const express = require("express");
 const PImage = require("pureimage");
 const { Client, GatewayIntentBits } = require("discord.js");
