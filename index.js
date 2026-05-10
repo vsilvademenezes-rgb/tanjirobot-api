@@ -3,7 +3,7 @@ const { createCanvas, loadImage } = require("@napi-rs/canvas");
 
 const app = express();
 
-app.get("/perfil", async (req, res) => {
+app.get("/perfil.png", async (req, res) => {
     try {
         const {
             n = "Membro",
@@ -16,79 +16,101 @@ app.get("/perfil", async (req, res) => {
             a = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
+        // Criar o canvas
         const canvas = createCanvas(1000, 600);
         const ctx = canvas.getContext("2d");
 
-        // Função de download de imagem
-        async function getImg(url) {
-            const r = await fetch(url);
-            const b = Buffer.from(await r.arrayBuffer());
-            return await loadImage(b);
-        }
+        // Função para baixar imagens com timeout para não travar a Vercel
+        const getImage = async (url) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Erro ao baixar imagem");
+            const arrayBuffer = await res.arrayBuffer();
+            return loadImage(Buffer.from(arrayBuffer));
+        };
 
         const fundoUrl = "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg";
-        
-        // Baixa as fotos primeiro
+
+        // Carregar imagens primeiro
         const [imgFundo, imgAvatar] = await Promise.all([
-            getImg(fundoUrl),
-            getImg(a).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/0.png"))
+            getImage(fundoUrl),
+            getImage(a).catch(() => getImage("https://cdn.discordapp.com/embed/avatars/0.png"))
         ]);
 
-        // 1. DESENHA O FUNDO
+        // 1. Desenhar Fundo
         ctx.drawImage(imgFundo, 0, 0, 1000, 600);
 
-        // 2. DESENHA O OVERLAY ESCURO
+        // 2. Overlay Escuro
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(0, 300, 1000, 300);
 
-        // 3. DESENHA O AVATAR CIRCULAR
+        // 3. Avatar Circular
         ctx.save();
         ctx.beginPath();
         ctx.arc(110, 410, 80, 0, Math.PI * 2);
         ctx.clip();
         ctx.drawImage(imgAvatar, 30, 330, 160, 160);
         ctx.restore();
-        
+
+        // Borda branca do avatar
         ctx.strokeStyle = "white";
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // 4. TRUQUE MESTRE: DESENHAR O TEXTO COMO SVG (Resolve o erro da Vercel)
-        const larguraXP = Math.min(Number(x) / Number(m), 1) * 280;
+        // 4. DESENHO DOS TEXTOS (Corrigido para aparecer sempre)
+        ctx.fillStyle = "#FFFFFF";
+        
+        // Nome
+        ctx.font = "bold 50px Arial, sans-serif";
+        ctx.fillText(n.toUpperCase().substring(0, 15), 220, 380);
 
-        const svgData = `
-        <svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
-            <style>
-                .t { fill: white; font-family: sans-serif; font-weight: bold; }
-            </style>
-            <text x="220" y="380" class="t" font-size="50">${n.toUpperCase()}</text>
-            <text x="220" y="430" class="t" font-size="25" font-weight="normal">ID: ${i}</text>
-            <text x="220" y="475" class="t" font-size="25" font-weight="normal">IENE: ${ie}</text>
-            
-            <text x="650" y="390" class="t" font-size="35">LEVEL</text>
-            <text x="860" y="390" class="t" font-size="35">XP</text>
-            <text x="690" y="470" class="t" font-size="65">${l}</text>
-            <text x="790" y="470" class="t" font-size="22" font-weight="normal">${x}/${m}</text>
-            
-            <rect x="650" y="520" width="280" height="25" rx="12" fill="#2b2b2b" />
-            <rect x="650" y="520" width="${larguraXP}" height="25" rx="12" fill="#00ff88" />
-            
-            <text x="30" y="555" class="t" font-size="35">SOBRE MIM</text>
-            <text x="30" y="590" class="t" font-size="20" font-weight="normal">${s}</text>
-        </svg>`;
+        // ID e IENE
+        ctx.font = "28px Arial, sans-serif";
+        ctx.fillText(`ID: ${i}`, 220, 430);
+        ctx.fillText(`IENE: ${ie}`, 220, 475);
 
-        // Converte o SVG em uma imagem e "carimba" por cima do canvas
-        const svgBuffer = Buffer.from(svgData);
-        const imgTexto = await loadImage(`data:image/svg+xml;base64,${svgBuffer.toString('base64')}`);
-        ctx.drawImage(imgTexto, 0, 0);
+        // Level e XP
+        ctx.font = "bold 40px Arial, sans-serif";
+        ctx.fillText("LEVEL", 650, 390);
+        ctx.fillText("XP", 860, 390);
 
-        // Retorna a imagem final
+        ctx.font = "bold 65px Arial, sans-serif";
+        ctx.fillText(l, 690, 470);
+
+        ctx.font = "26px Arial, sans-serif";
+        ctx.fillText(`${x}/${m}`, 790, 470);
+
+        // 5. BARRA DE XP
+        const larguraMaxima = 280;
+        const porcentagem = Math.min(Number(x) / Number(m), 1) * larguraMaxima;
+
+        // Fundo da barra
+        ctx.fillStyle = "#2b2b2b";
+        ctx.beginPath();
+        ctx.roundRect(650, 520, larguraMaxima, 25, 12);
+        ctx.fill();
+
+        // Progresso
+        ctx.fillStyle = "#00ff88";
+        ctx.beginPath();
+        ctx.roundRect(650, 520, porcentagem, 25, 12);
+        ctx.fill();
+
+        // 6. SOBRE MIM
+        ctx.fillStyle = "white";
+        ctx.font = "bold 40px Arial, sans-serif";
+        ctx.fillText("SOBRE MIM", 30, 555);
+        
+        ctx.font = "24px Arial, sans-serif";
+        ctx.fillText(s.substring(0, 50), 30, 595);
+
+        // Finalizar imagem
+        const buffer = canvas.toBuffer("image/png");
         res.setHeader("Content-Type", "image/png");
-        res.send(canvas.toBuffer("image/png"));
+        res.send(buffer);
 
     } catch (err) {
         console.error(err);
-        res.status(500).send("Erro fatal na renderização");
+        res.status(500).send("Erro Interno");
     }
 });
 
