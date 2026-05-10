@@ -1,29 +1,27 @@
 const express = require("express");
 const { createCanvas, loadImage, GlobalFonts } = require("@napi-rs/canvas");
-const https = require("https");
 
 const app = express();
 
-// Carrega a fonte uma vez quando o servidor inicia
+// Fonte embutida via CDN do jsDelivr (mais confiável na Vercel)
 let fontCarregada = false;
 
 async function carregarFonte() {
     if (fontCarregada) return;
-    return new Promise((resolve, reject) => {
-        const url = "https://github.com/google/fonts/raw/main/apache/roboto/Roboto%5Bwdth%2Cwght%5D.ttf";
-        https.get(url, (res) => {
-            const chunks = [];
-            res.on("data", chunk => chunks.push(chunk));
-            res.on("end", () => {
-                const buffer = Buffer.concat(chunks);
-                GlobalFonts.register(buffer, "Roboto");
-                fontCarregada = true;
-                resolve();
-            });
-            res.on("error", reject);
-        }).on("error", reject);
-    });
+    try {
+        const url = "https://cdn.jsdelivr.net/npm/@fontsource/roboto@5.0.8/files/roboto-latin-700-normal.woff2";
+        const r = await fetch(url);
+        const b = Buffer.from(await r.arrayBuffer());
+        GlobalFonts.register(b, "Roboto");
+        fontCarregada = true;
+        console.log("✅ Fonte carregada com sucesso");
+    } catch (e) {
+        console.error("❌ Erro ao carregar fonte:", e.message);
+    }
 }
+
+// Pré-carrega a fonte ao iniciar
+carregarFonte();
 
 app.get("/perfil", async (req, res) => {
     try {
@@ -51,14 +49,11 @@ app.get("/perfil", async (req, res) => {
             getImg(a).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/0.png"))
         ]);
 
-        // Camada 1: Fundo
         ctx.drawImage(imgFundo, 0, 0, 1000, 600);
 
-        // Camada 2: Overlay Escuro
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(0, 300, 1000, 300);
 
-        // Camada 3: Avatar Circular
         ctx.save();
         ctx.beginPath();
         ctx.arc(110, 410, 80, 0, Math.PI * 2);
@@ -69,26 +64,27 @@ app.get("/perfil", async (req, res) => {
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // Camada 4: Textos (agora com Roboto registrada)
+        // Verifica se a fonte foi carregada, senão usa fallback
+        const fonte = fontCarregada ? "Roboto" : "serif";
+
         ctx.fillStyle = "white";
         
-        ctx.font = "bold 50px Roboto";
+        ctx.font = `bold 50px ${fonte}`;
         ctx.fillText(n.toUpperCase(), 220, 380);
 
-        ctx.font = "28px Roboto";
+        ctx.font = `28px ${fonte}`;
         ctx.fillText(`ID: ${i}`, 220, 430);
         ctx.fillText(`IENE: ${ie}`, 220, 475);
 
-        ctx.font = "bold 35px Roboto";
+        ctx.font = `bold 35px ${fonte}`;
         ctx.fillText("LEVEL", 650, 390);
         ctx.fillText("XP", 860, 390);
 
-        ctx.font = "bold 65px Roboto";
+        ctx.font = `bold 65px ${fonte}`;
         ctx.fillText(l, 690, 470);
-        ctx.font = "24px Roboto";
+        ctx.font = `24px ${fonte}`;
         ctx.fillText(`${x}/${m}`, 790, 470);
 
-        // Barra de XP
         const xpAtual = Number(String(x).replace(/\D/g, '')) || 0;
         const xpMax = Number(String(m).replace(/\D/g, '')) || 1;
         const larguraXP = Math.min(xpAtual / xpMax, 1) * 280;
@@ -106,9 +102,9 @@ app.get("/perfil", async (req, res) => {
         }
 
         ctx.fillStyle = "white";
-        ctx.font = "bold 35px Roboto";
+        ctx.font = `bold 35px ${fonte}`;
         ctx.fillText("SOBRE MIM", 30, 555);
-        ctx.font = "22px Roboto";
+        ctx.font = `22px ${fonte}`;
         ctx.fillText(s, 30, 590);
 
         res.setHeader("Content-Type", "image/png");
