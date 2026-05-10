@@ -1,7 +1,29 @@
 const express = require("express");
-const { createCanvas, loadImage } = require("@napi-rs/canvas");
+const { createCanvas, loadImage, GlobalFonts } = require("@napi-rs/canvas");
+const https = require("https");
 
 const app = express();
+
+// Carrega a fonte uma vez quando o servidor inicia
+let fontCarregada = false;
+
+async function carregarFonte() {
+    if (fontCarregada) return;
+    return new Promise((resolve, reject) => {
+        const url = "https://github.com/google/fonts/raw/main/apache/roboto/Roboto%5Bwdth%2Cwght%5D.ttf";
+        https.get(url, (res) => {
+            const chunks = [];
+            res.on("data", chunk => chunks.push(chunk));
+            res.on("end", () => {
+                const buffer = Buffer.concat(chunks);
+                GlobalFonts.register(buffer, "Roboto");
+                fontCarregada = true;
+                resolve();
+            });
+            res.on("error", reject);
+        }).on("error", reject);
+    });
+}
 
 app.get("/perfil", async (req, res) => {
     try {
@@ -11,10 +33,11 @@ app.get("/perfil", async (req, res) => {
             a = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
+        await carregarFonte();
+
         const canvas = createCanvas(1000, 600);
         const ctx = canvas.getContext("2d");
 
-        // Função para baixar imagens
         async function getImg(url) {
             const r = await fetch(url);
             const b = Buffer.from(await r.arrayBuffer());
@@ -23,7 +46,6 @@ app.get("/perfil", async (req, res) => {
 
         const fundoUrl = "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg";
         
-        // Tenta carregar as imagens, se o avatar falhar usa o padrão do Discord
         const [imgFundo, imgAvatar] = await Promise.all([
             getImg(fundoUrl),
             getImg(a).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/0.png"))
@@ -47,27 +69,26 @@ app.get("/perfil", async (req, res) => {
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // Camada 4: Textos
+        // Camada 4: Textos (agora com Roboto registrada)
         ctx.fillStyle = "white";
         
-        // Nome (Usa sans-serif que é o padrão mais seguro)
-        ctx.font = "bold 50px sans-serif";
+        ctx.font = "bold 50px Roboto";
         ctx.fillText(n.toUpperCase(), 220, 380);
 
-        ctx.font = "28px sans-serif";
+        ctx.font = "28px Roboto";
         ctx.fillText(`ID: ${i}`, 220, 430);
         ctx.fillText(`IENE: ${ie}`, 220, 475);
 
-        ctx.font = "bold 35px sans-serif";
+        ctx.font = "bold 35px Roboto";
         ctx.fillText("LEVEL", 650, 390);
         ctx.fillText("XP", 860, 390);
 
-        ctx.font = "bold 65px sans-serif";
+        ctx.font = "bold 65px Roboto";
         ctx.fillText(l, 690, 470);
-        ctx.font = "24px sans-serif";
+        ctx.font = "24px Roboto";
         ctx.fillText(`${x}/${m}`, 790, 470);
 
-        // Cálculo da Barra de XP (Limpando caracteres não numéricos)
+        // Barra de XP
         const xpAtual = Number(String(x).replace(/\D/g, '')) || 0;
         const xpMax = Number(String(m).replace(/\D/g, '')) || 1;
         const larguraXP = Math.min(xpAtual / xpMax, 1) * 280;
@@ -85,9 +106,9 @@ app.get("/perfil", async (req, res) => {
         }
 
         ctx.fillStyle = "white";
-        ctx.font = "bold 35px sans-serif";
+        ctx.font = "bold 35px Roboto";
         ctx.fillText("SOBRE MIM", 30, 555);
-        ctx.font = "22px sans-serif";
+        ctx.font = "22px Roboto";
         ctx.fillText(s, 30, 590);
 
         res.setHeader("Content-Type", "image/png");
