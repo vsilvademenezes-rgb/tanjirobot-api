@@ -1,5 +1,5 @@
 const express = require("express");
-const Jimp = require("jimp");
+const sharp = require("sharp");
 
 const app = express();
 
@@ -16,73 +16,63 @@ app.get("/perfil", async (req, res) => {
             a = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
-        // 1. Carregar Fontes Padrão do Jimp (Não depende do sistema)
-        const fontBig = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
-        const fontMed = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE);
-        const fontSmall = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
-
-        // 2. Carregar Imagens
-        const fundoUrl = "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg";
-        const [imgFundo, imgAvatar] = await Promise.all([
-            Jimp.read(fundoUrl),
-            Jimp.read(a).catch(() => Jimp.read("https://cdn.discordapp.com/embed/avatars/0.png"))
+        // 1. Baixar as imagens (Fundo e Avatar)
+        const [fundoBuf, avatarBuf] = await Promise.all([
+            fetch("https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg").then(r => r.arrayBuffer()),
+            fetch(a).then(r => r.arrayBuffer()).catch(() => fetch("https://cdn.discordapp.com/embed/avatars/0.png").then(r => r.arrayBuffer()))
         ]);
 
-        // 3. Redimensionar Fundo
-        imgFundo.resize(1000, 600);
+        // 2. Processar o Avatar (Deixar redondo)
+        const circleShape = Buffer.from('<svg><circle cx="80" cy="80" r="80" /></svg>');
+        const avatarRedondo = await sharp(Buffer.from(avatarBuf))
+            .resize(160, 160)
+            .composite([{ input: circleShape, blend: 'dest-in' }])
+            .png()
+            .toBuffer();
 
-        // 4. Criar Overlay (Retângulo Escuro)
-        const overlay = new Jimp(1000, 300, 0x000000aa); // Preto com transparência
-        imgFundo.composite(overlay, 0, 300);
-
-        // 5. Preparar Avatar
-        imgAvatar.resize(160, 160);
-        // Criar máscara circular para o avatar
-        const mask = await Jimp.read("https://i.imgur.com/vSRE8S3.png").catch(() => null); 
-        if (mask) {
-            mask.resize(160, 160);
-            imgAvatar.mask(mask, 0, 0);
-        }
-
-        imgFundo.composite(imgAvatar, 30, 330);
-
-        // 6. Desenhar Textos
-        // Nome
-        imgFundo.print(fontBig, 220, 330, n.toUpperCase());
-
-        // ID e IENE
-        imgFundo.print(fontMed, 220, 410, `ID: ${i}`);
-        imgFundo.print(fontMed, 220, 450, `IENE: ${ie}`);
-
-        // Level e XP
-        imgFundo.print(fontMed, 650, 340, "LEVEL");
-        imgFundo.print(fontBig, 680, 380, l);
+        // 3. Criar os Textos e Barras usando SVG (Isso resolve o sumiço das letras)
+        const larguraXP = Math.min(Number(x) / Number(m), 1) * 280;
         
-        imgFundo.print(fontMed, 850, 340, "XP");
-        imgFundo.print(fontMed, 800, 420, `${x}/${m}`);
+        const svgTexto = Buffer.from(`
+<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        .bold { font-family: sans-serif; font-weight: bold; fill: white; }
+        .reg { font-family: sans-serif; fill: white; }
+    </style>
+    <rect x="0" y="300" width="1000" height="300" fill="black" fill-opacity="0.65" />
+    
+    <text x="220" y="380" class="bold" font-size="50">${n.toUpperCase()}</text>
+    <text x="220" y="430" class="reg" font-size="28">ID: ${i}</text>
+    <text x="220" y="475" class="reg" font-size="28">IENE: ${ie}</text>
+    
+    <text x="650" y="390" class="bold" font-size="35">LEVEL</text>
+    <text x="860" y="390" class="bold" font-size="35">XP</text>
+    <text x="690" y="470" class="bold" font-size="65">${l}</text>
+    <text x="790" y="470" class="reg" font-size="24">${x}/${m}</text>
+    
+    <rect x="650" y="520" width="280" height="25" rx="12" fill="#2b2b2b" />
+    <rect x="650" y="520" width="${larguraXP}" height="25" rx="12" fill="#00ff88" />
+    
+    <text x="30" y="555" class="bold" font-size="35">SOBRE MIM</text>
+    <text x="30" y="590" class="reg" font-size="22">${s}</text>
+</svg>`);
 
-        // Barra de XP (Simples)
-        const larguraBarra = 280;
-        const progresso = Math.min(Number(x) / Number(m), 1) * larguraBarra;
-        
-        const barraFundo = new Jimp(larguraBarra, 20, 0x2b2b2bff);
-        const barraProgresso = new Jimp(progresso > 0 ? progresso : 1, 20, 0x00ff88ff);
-        
-        imgFundo.composite(barraFundo, 650, 500);
-        imgFundo.composite(barraProgresso, 650, 500);
+        // 4. Montagem Final (Composite)
+        const imagemFinal = await sharp(Buffer.from(fundoBuf))
+            .resize(1000, 600)
+            .composite([
+                { input: svgTexto, top: 0, left: 0 },
+                { input: avatarRedondo, top: 330, left: 30 }
+            ])
+            .png()
+            .toBuffer();
 
-        // Sobre Mim
-        imgFundo.print(fontMed, 30, 510, "SOBRE MIM");
-        imgFundo.print(fontSmall, 30, 550, s);
-
-        // 7. Enviar a imagem
-        const buffer = await imgFundo.getBufferAsync(Jimp.MIME_PNG);
         res.setHeader("Content-Type", "image/png");
-        res.status(200).send(buffer);
+        res.status(200).send(imagemFinal);
 
     } catch (err) {
         console.error(err);
-        res.status(500).send("Erro: " + err.message);
+        res.status(500).send("Erro interno");
     }
 });
 
