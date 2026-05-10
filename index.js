@@ -12,7 +12,7 @@ try {
     console.log("Aviso: Fonte local não encontrada, usando padrão do sistema.");
 }
 
-app.get("/perfil", async (req, res) => {
+app.get("/perfill", async (req, res) => {
     try {
         const {
             n = "Membro",
