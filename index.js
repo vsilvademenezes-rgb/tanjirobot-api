@@ -19,29 +19,29 @@ app.get("/perfil", async (req, res) => {
         const canvas = createCanvas(1000, 600);
         const ctx = canvas.getContext("2d");
 
-        // Função para garantir que a imagem baixou antes de desenhar
-        async function carregarImg(url) {
+        // Função de download de imagem
+        async function getImg(url) {
             const r = await fetch(url);
-            const buffer = Buffer.from(await r.arrayBuffer());
-            return await loadImage(buffer);
+            const b = Buffer.from(await r.arrayBuffer());
+            return await loadImage(b);
         }
 
         const fundoUrl = "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg";
         
-        // Espera carregar TUDO antes de começar a desenhar
+        // Baixa as fotos primeiro
         const [imgFundo, imgAvatar] = await Promise.all([
-            carregarImg(fundoUrl),
-            carregarImg(a).catch(() => carregarImg("https://cdn.discordapp.com/embed/avatars/0.png"))
+            getImg(fundoUrl),
+            getImg(a).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/0.png"))
         ]);
 
-        // --- CAMADA 1: FUNDO (O que fica mais atrás) ---
+        // 1. DESENHA O FUNDO
         ctx.drawImage(imgFundo, 0, 0, 1000, 600);
 
-        // --- CAMADA 2: OVERLAY (O retângulo escuro) ---
+        // 2. DESENHA O OVERLAY ESCURO
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(0, 300, 1000, 300);
 
-        // --- CAMADA 3: AVATAR ---
+        // 3. DESENHA O AVATAR CIRCULAR
         ctx.save();
         ctx.beginPath();
         ctx.arc(110, 410, 80, 0, Math.PI * 2);
@@ -49,59 +49,46 @@ app.get("/perfil", async (req, res) => {
         ctx.drawImage(imgAvatar, 30, 330, 160, 160);
         ctx.restore();
         
-        // Borda do avatar
         ctx.strokeStyle = "white";
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // --- CAMADA 4: TEXTOS (O que fica na frente de TUDO) ---
-        ctx.fillStyle = "white";
-        
-        // Nome (Se certificar que a cor é branca e está em cima)
-        ctx.font = "bold 50px sans-serif";
-        ctx.fillText(n.toUpperCase(), 220, 380);
-
-        // Infos
-        ctx.font = "28px sans-serif";
-        ctx.fillText(`ID: ${i}`, 220, 430);
-        ctx.fillText(`IENE: ${ie}`, 220, 475);
-
-        // Level e XP
-        ctx.font = "bold 35px sans-serif";
-        ctx.fillText("LEVEL", 650, 390);
-        ctx.fillText("XP", 860, 390);
-
-        ctx.font = "bold 65px sans-serif";
-        ctx.fillText(l, 690, 470);
-        ctx.font = "24px sans-serif";
-        ctx.fillText(`${x}/${m}`, 790, 470);
-
-        // Barra de XP
+        // 4. TRUQUE MESTRE: DESENHAR O TEXTO COMO SVG (Resolve o erro da Vercel)
         const larguraXP = Math.min(Number(x) / Number(m), 1) * 280;
-        ctx.fillStyle = "#2b2b2b";
-        ctx.beginPath();
-        ctx.roundRect(650, 520, 280, 25, 12);
-        ctx.fill();
 
-        ctx.fillStyle = "#00ff88"; // Cor da barra
-        ctx.beginPath();
-        ctx.roundRect(650, 520, larguraXP, 25, 12);
-        ctx.fill();
+        const svgData = `
+        <svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                .t { fill: white; font-family: sans-serif; font-weight: bold; }
+            </style>
+            <text x="220" y="380" class="t" font-size="50">${n.toUpperCase()}</text>
+            <text x="220" y="430" class="t" font-size="25" font-weight="normal">ID: ${i}</text>
+            <text x="220" y="475" class="t" font-size="25" font-weight="normal">IENE: ${ie}</text>
+            
+            <text x="650" y="390" class="t" font-size="35">LEVEL</text>
+            <text x="860" y="390" class="t" font-size="35">XP</text>
+            <text x="690" y="470" class="t" font-size="65">${l}</text>
+            <text x="790" y="470" class="t" font-size="22" font-weight="normal">${x}/${m}</text>
+            
+            <rect x="650" y="520" width="280" height="25" rx="12" fill="#2b2b2b" />
+            <rect x="650" y="520" width="${larguraXP}" height="25" rx="12" fill="#00ff88" />
+            
+            <text x="30" y="555" class="t" font-size="35">SOBRE MIM</text>
+            <text x="30" y="590" class="t" font-size="20" font-weight="normal">${s}</text>
+        </svg>`;
 
-        // Sobre Mim
-        ctx.fillStyle = "white";
-        ctx.font = "bold 35px sans-serif";
-        ctx.fillText("SOBRE MIM", 30, 555);
-        ctx.font = "22px sans-serif";
-        ctx.fillText(s, 30, 590);
+        // Converte o SVG em uma imagem e "carimba" por cima do canvas
+        const svgBuffer = Buffer.from(svgData);
+        const imgTexto = await loadImage(`data:image/svg+xml;base64,${svgBuffer.toString('base64')}`);
+        ctx.drawImage(imgTexto, 0, 0);
 
-        // Envia para o bot
+        // Retorna a imagem final
         res.setHeader("Content-Type", "image/png");
         res.send(canvas.toBuffer("image/png"));
 
     } catch (err) {
         console.error(err);
-        res.status(500).send("Erro ao gerar imagem");
+        res.status(500).send("Erro fatal na renderização");
     }
 });
 
