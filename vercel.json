@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.js",
+      "src": "perfil/index.js",
       "use": "@vercel/node"
     },
     {
@@ -17,7 +17,7 @@
   "routes": [
     {
       "src": "/perfil",
-      "dest": "index.js"
+      "dest": "perfil/index.js"
     },
     {
       "src": "/level",
