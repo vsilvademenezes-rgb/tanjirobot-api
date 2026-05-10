@@ -2,8 +2,11 @@
   "name": "tanjirobot-api",
   "version": "1.0.0",
   "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
-    "express": "^4.19.2",
-    "sharp": "^0.33.5"
+    "@napi-rs/canvas": "^0.1.65",
+    "express": "^4.19.2"
   }
 }
