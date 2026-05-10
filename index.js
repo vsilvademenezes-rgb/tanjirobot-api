@@ -1,5 +1,5 @@
 const express = require("express");
-const sharp = require("sharp");
+const { createCanvas, loadImage, GlobalFonts } = require("@napi-rs/canvas");
 
 const app = express();
 
@@ -16,63 +16,101 @@ app.get("/perfil", async (req, res) => {
             a = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
-        // 1. Baixar as imagens (Fundo e Avatar)
-        const [fundoBuf, avatarBuf] = await Promise.all([
-            fetch("https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg").then(r => r.arrayBuffer()),
-            fetch(a).then(r => r.arrayBuffer()).catch(() => fetch("https://cdn.discordapp.com/embed/avatars/0.png").then(r => r.arrayBuffer()))
+        // --- CORREÇÃO DA FONTE (Baixa uma fonte real para não dar quadrados) ---
+        const fontUrl = "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf";
+        const fontRes = await fetch(fontUrl);
+        const fontBuffer = Buffer.from(await fontRes.arrayBuffer());
+        GlobalFonts.register(fontBuffer, "Roboto");
+
+        const canvas = createCanvas(1000, 600);
+        const ctx = canvas.getContext("2d");
+
+        // Função para carregar imagens
+        async function getImg(url) {
+            const r = await fetch(url);
+            const b = Buffer.from(await r.arrayBuffer());
+            return await loadImage(b);
+        }
+
+        const fundoUrl = "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg";
+        
+        const [imgFundo, imgAvatar] = await Promise.all([
+            getImg(fundoUrl),
+            getImg(a).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/0.png"))
         ]);
 
-        // 2. Processar o Avatar (Deixar redondo)
-        const circleShape = Buffer.from('<svg><circle cx="80" cy="80" r="80" /></svg>');
-        const avatarRedondo = await sharp(Buffer.from(avatarBuf))
-            .resize(160, 160)
-            .composite([{ input: circleShape, blend: 'dest-in' }])
-            .png()
-            .toBuffer();
+        // 1. Fundo
+        ctx.drawImage(imgFundo, 0, 0, 1000, 600);
 
-        // 3. Criar os Textos e Barras usando SVG (Isso resolve o sumiço das letras)
-        const larguraXP = Math.min(Number(x) / Number(m), 1) * 280;
+        // 2. Overlay
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(0, 300, 1000, 600);
+
+        // 3. Avatar redondo
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(110, 410, 80, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(imgAvatar, 30, 330, 160, 160);
+        ctx.restore();
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 6;
+        ctx.stroke();
+
+        // 4. TEXTOS (Agora usando a fonte Roboto que baixamos)
+        ctx.fillStyle = "white";
         
-        const svgTexto = Buffer.from(`
-<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
-    <style>
-        .bold { font-family: sans-serif; font-weight: bold; fill: white; }
-        .reg { font-family: sans-serif; fill: white; }
-    </style>
-    <rect x="0" y="300" width="1000" height="300" fill="black" fill-opacity="0.65" />
-    
-    <text x="220" y="380" class="bold" font-size="50">${n.toUpperCase()}</text>
-    <text x="220" y="430" class="reg" font-size="28">ID: ${i}</text>
-    <text x="220" y="475" class="reg" font-size="28">IENE: ${ie}</text>
-    
-    <text x="650" y="390" class="bold" font-size="35">LEVEL</text>
-    <text x="860" y="390" class="bold" font-size="35">XP</text>
-    <text x="690" y="470" class="bold" font-size="65">${l}</text>
-    <text x="790" y="470" class="reg" font-size="24">${x}/${m}</text>
-    
-    <rect x="650" y="520" width="280" height="25" rx="12" fill="#2b2b2b" />
-    <rect x="650" y="520" width="${larguraXP}" height="25" rx="12" fill="#00ff88" />
-    
-    <text x="30" y="555" class="bold" font-size="35">SOBRE MIM</text>
-    <text x="30" y="590" class="reg" font-size="22">${s}</text>
-</svg>`);
+        // Nome
+        ctx.font = "bold 50px Roboto";
+        ctx.fillText(n.toUpperCase(), 220, 380);
 
-        // 4. Montagem Final (Composite)
-        const imagemFinal = await sharp(Buffer.from(fundoBuf))
-            .resize(1000, 600)
-            .composite([
-                { input: svgTexto, top: 0, left: 0 },
-                { input: avatarRedondo, top: 330, left: 30 }
-            ])
-            .png()
-            .toBuffer();
+        // Infos
+        ctx.font = "28px Roboto";
+        ctx.fillText(`ID: ${i}`, 220, 430);
+        ctx.fillText(`IENE: ${ie}`, 220, 475);
+
+        // Level e XP
+        ctx.font = "bold 35px Roboto";
+        ctx.fillText("LEVEL", 650, 390);
+        ctx.fillText("XP", 860, 390);
+
+        ctx.font = "bold 65px Roboto";
+        ctx.fillText(l, 690, 470);
+
+        ctx.font = "24px Roboto";
+        ctx.fillText(`${x}/${m}`, 790, 470);
+
+        // --- CORREÇÃO DA BARRA DE XP ---
+        // Convertendo para número para garantir que o cálculo funcione
+        const atualXP = parseFloat(x) || 0;
+        const maxXP = parseFloat(m) || 1000;
+        const larguraXP = Math.min(atualXP / maxXP, 1) * 280;
+
+        // Fundo da barra
+        ctx.fillStyle = "#2b2b2b";
+        ctx.beginPath();
+        ctx.roundRect(650, 520, 280, 25, 12);
+        ctx.fill();
+
+        // Progresso verde
+        ctx.fillStyle = "#00ff88";
+        ctx.beginPath();
+        ctx.roundRect(650, 520, larguraXP, 25, 12);
+        ctx.fill();
+
+        // Sobre Mim
+        ctx.fillStyle = "white";
+        ctx.font = "bold 35px Roboto";
+        ctx.fillText("SOBRE MIM", 30, 555);
+        ctx.font = "22px Roboto";
+        ctx.fillText(s, 30, 590);
 
         res.setHeader("Content-Type", "image/png");
-        res.status(200).send(imagemFinal);
+        res.send(canvas.toBuffer("image/png"));
 
     } catch (err) {
         console.error(err);
-        res.status(500).send("Erro interno");
+        res.status(500).send("Erro: " + err.message);
     }
 });
 
