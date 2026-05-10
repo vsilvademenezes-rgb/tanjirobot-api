@@ -3,7 +3,7 @@ const { createCanvas, loadImage } = require("@napi-rs/canvas");
 
 const app = express();
 
-app.get("/perfil.png", async (req, res) => {
+app.get("/perfil", async (req, res) => {
     try {
         const {
             n = "Membro",
