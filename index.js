@@ -1,4 +1,5 @@
 const express = require("express");
+const sharp = require("sharp");
 
 const app = express();
 
@@ -7,19 +8,19 @@ app.get("/perfil.png", async (req, res) => {
     try {
 
         const {
-            nome = "Membro",
-            iene = "0",
-            id = "000000",
-            lvl = "1",
-            xp = "0",
-            maxxp = "1000",
-            sobre = "Use /sobremim",
-            avatar = "https://cdn.discordapp.com/embed/avatars/0.png"
+            n = "Membro",
+            ie = "0",
+            i = "000000",
+            l = "1",
+            x = "0",
+            m = "1000",
+            s = "Use /sobremim",
+            a = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
         const porcentagem =
             Math.min(
-                Number(xp) / Number(maxxp),
+                Number(x) / Number(m),
                 1
             ) * 280;
 
@@ -50,7 +51,7 @@ app.get("/perfil.png", async (req, res) => {
     </defs>
 
     <image
-        href="${avatar}"
+        href="${a}"
         x="30"
         y="320"
         width="160"
@@ -58,7 +59,7 @@ app.get("/perfil.png", async (req, res) => {
         clip-path="url(#avatarClip)"
     />
 
-    <!-- BORDA AVATAR -->
+    <!-- BORDA -->
     <circle
         cx="110"
         cy="400"
@@ -77,7 +78,7 @@ app.get("/perfil.png", async (req, res) => {
         font-family="Arial"
         font-weight="bold"
     >
-        ${nome.toUpperCase()}
+        ${n.toUpperCase()}
     </text>
 
     <!-- INFO -->
@@ -88,7 +89,7 @@ app.get("/perfil.png", async (req, res) => {
         font-size="28"
         font-family="Arial"
     >
-        ID: ${id}
+        ID: ${i}
     </text>
 
     <text
@@ -98,7 +99,7 @@ app.get("/perfil.png", async (req, res) => {
         font-size="28"
         font-family="Arial"
     >
-        IENE: ${iene}
+        IENE: ${ie}
     </text>
 
     <!-- LEVEL -->
@@ -121,7 +122,7 @@ app.get("/perfil.png", async (req, res) => {
         font-family="Arial"
         font-weight="bold"
     >
-        ${lvl}
+        ${l}
     </text>
 
     <!-- XP -->
@@ -143,7 +144,7 @@ app.get("/perfil.png", async (req, res) => {
         font-size="26"
         font-family="Arial"
     >
-        ${xp} / ${maxxp}
+        ${x} / ${m}
     </text>
 
     <!-- BARRA XP -->
@@ -184,18 +185,25 @@ app.get("/perfil.png", async (req, res) => {
         font-size="24"
         font-family="Arial"
     >
-        ${sobre}
+        ${s}
     </text>
 
 </svg>
 `;
 
+        // CONVERTER SVG PRA PNG REAL
+        const png = await sharp(
+            Buffer.from(svg)
+        )
+        .png()
+        .toBuffer();
+
         res.setHeader(
             "Content-Type",
-            "image/svg+xml"
+            "image/png"
         );
 
-        res.send(svg);
+        res.send(png);
 
     } catch (err) {
 
