@@ -1,5 +1,5 @@
 const express = require("express");
-const sharp = require("sharp");
+const { createCanvas, loadImage, GlobalFonts } = require("@napi-rs/canvas");
 
 const app = express();
 
@@ -16,60 +16,106 @@ app.get("/perfil.png", async (req, res) => {
             a = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
-        // Função rápida para converter imagem em Base64 usando o fetch nativo
-        async function getBase64(url) {
-            try {
-                const response = await fetch(url);
-                const arrayBuffer = await response.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                const contentType = response.headers.get("content-type");
-                return `data:${contentType};base64,${buffer.toString("base64")}`;
-            } catch (e) {
-                // Se falhar o avatar, usa um fallback transparente ou padrão
-                return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-            }
-        }
+        // Criar o canvas (tamanho do seu fundo)
+        const canvas = createCanvas(1000, 600);
+        const ctx = canvas.getContext("2d");
 
+        // 1. Carregar Imagens (Fundo e Avatar)
         const fundoUrl = "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg";
-        const [fundoBase64, avatarBase64] = await Promise.all([
-            getBase64(fundoUrl),
-            getBase64(a)
+        
+        // Usamos Promise.all para carregar tudo de uma vez e ser mais rápido
+        const [imgFundo, imgAvatar] = await Promise.all([
+            loadImage(fundoUrl).catch(() => null),
+            loadImage(a).catch(() => loadImage("https://cdn.discordapp.com/embed/avatars/0.png"))
         ]);
 
+        // 2. Desenhar o Fundo
+        if (imgFundo) {
+            ctx.drawImage(imgFundo, 0, 0, 1000, 600);
+        } else {
+            ctx.fillStyle = "#1a1a1a";
+            ctx.fillRect(0, 0, 1000, 600);
+        }
+
+        // 3. Overlay Escuro (Retângulo na parte de baixo)
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.fillRect(0, 300, 1000, 300);
+
+        // 4. Desenhar Avatar Circular
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(110, 410, 80, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(imgAvatar, 30, 330, 160, 160);
+        ctx.restore();
+
+        // Borda do Avatar
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 6;
+        ctx.stroke();
+
+        // 5. Configuração de Texto e Cores
+        ctx.fillStyle = "white";
+        ctx.font = "bold 45px sans-serif";
+        
+        // Nome
+        ctx.fillText(n.toUpperCase(), 220, 380);
+
+        // IDs e Info
+        ctx.font = "25px sans-serif";
+        ctx.fillText(`ID: ${i}`, 220, 430);
+        ctx.fillText(`IENE: ${ie}`, 220, 470);
+
+        // Level e XP
+        ctx.font = "bold 35px sans-serif";
+        ctx.fillText("LEVEL", 650, 390);
+        ctx.fillText("XP", 860, 390);
+
+        ctx.font = "bold 60px sans-serif";
+        ctx.fillText(l, 690, 470);
+
+        ctx.font = "24px sans-serif";
+        ctx.fillText(`${x} / ${m}`, 790, 470);
+
+        // 6. Barra de XP
         const porcentagem = Math.min(Number(x) / Number(m), 1) * 280;
+        
+        // Fundo da Barra
+        ctx.fillStyle = "#2b2b2b";
+        ctx.beginPath();
+        ctx.roundRect(650, 510, 280, 25, 12);
+        ctx.fill();
 
-        const svg = `
-<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
-    <image href="${fundoBase64}" width="1000" height="600" preserveAspectRatio="xMidYMid slice" />
-    <rect x="0" y="300" width="1000" height="300" fill="black" fill-opacity="0.65" />
-    <defs>
-        <clipPath id="avatarClip"><circle cx="110" cy="410" r="80"/></clipPath>
-    </defs>
-    <image href="${avatarBase64}" x="30" y="330" width="160" height="160" clip-path="url(#avatarClip)" />
-    <circle cx="110" cy="410" r="80" fill="none" stroke="white" stroke-width="6" />
-    <text x="220" y="380" fill="white" font-size="45" font-family="sans-serif" font-weight="bold">${n.toUpperCase()}</text>
-    <text x="220" y="430" fill="white" font-size="25" font-family="sans-serif">ID: ${i}</text>
-    <text x="220" y="470" fill="white" font-size="25" font-family="sans-serif">IENE: ${ie}</text>
-    <text x="650" y="390" fill="white" font-size="35" font-family="sans-serif" font-weight="bold">LEVEL</text>
-    <text x="690" y="470" fill="white" font-size="60" font-family="sans-serif" font-weight="bold">${l}</text>
-    <text x="860" y="390" fill="white" font-size="35" font-family="sans-serif" font-weight="bold">XP</text>
-    <text x="790" y="470" fill="white" font-size="24" font-family="sans-serif">${x} / ${m}</text>
-    <rect x="650" y="510" width="280" height="25" rx="12" fill="#2b2b2b" />
-    <rect x="650" y="510" width="${porcentagem}" height="25" rx="12" fill="#00ff88" />
-    <text x="30" y="545" fill="white" font-size="35" font-family="sans-serif" font-weight="bold">SOBRE MIM</text>
-    <text x="30" y="580" fill="white" font-size="22" font-family="sans-serif">${s}</text>
-</svg>`;
+        // Progresso
+        ctx.fillStyle = "#00ff88";
+        ctx.beginPath();
+        ctx.roundRect(650, 510, porcentagem, 25, 12);
+        ctx.fill();
 
-        const png = await sharp(Buffer.from(svg)).png().toBuffer();
+        // 7. Sobre Mim
+        ctx.fillStyle = "white";
+        ctx.font = "bold 35px sans-serif";
+        ctx.fillText("SOBRE MIM", 30, 545);
+        
+        ctx.font = "22px sans-serif";
+        ctx.fillText(s, 30, 580);
 
+        // Enviar a imagem final
+        const buffer = canvas.toBuffer("image/png");
         res.setHeader("Content-Type", "image/png");
-        res.setHeader("Cache-Control", "public, max-age=3600"); // Cache para evitar erro 500 por excesso de requisição
-        res.status(200).send(png);
+        res.status(200).send(buffer);
 
     } catch (err) {
         console.error(err);
-        res.status(500).send("Erro interno");
+        res.status(500).send("Erro ao gerar perfil");
     }
 });
 
+// Exportar para a Vercel
 module.exports = app;
+
+// Caso queira testar localmente:
+if (require.main === module) {
+    app.listen(3000, () => console.log("Servidor rodando na porta 3000"));
+}
