@@ -1,10 +1,9 @@
 const express = require("express");
 const { createCanvas, loadImage } = require("@napi-rs/canvas");
-const axios = require("axios");
 
 const app = express();
 
-app.get("/perfil", async (req, res) => {
+app.get("/perfil.png", async (req, res) => {
     try {
         const {
             n = "Membro",
@@ -17,33 +16,31 @@ app.get("/perfil", async (req, res) => {
             a = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
-        // Função para baixar imagem e converter em buffer (Mais seguro na Vercel)
-        const fetchImage = async (url) => {
-            const response = await axios.get(url, { responseType: 'arraybuffer' });
-            return Buffer.from(response.data, 'binary');
+        // Criar o canvas
+        const canvas = createCanvas(1000, 600);
+        const ctx = canvas.getContext("2d");
+
+        // Função para baixar imagens com timeout para não travar a Vercel
+        const getImage = async (url) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Erro ao baixar imagem");
+            const arrayBuffer = await res.arrayBuffer();
+            return loadImage(Buffer.from(arrayBuffer));
         };
 
         const fundoUrl = "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg";
 
-        // Baixa o fundo e o avatar primeiro
-        const [bufferFundo, bufferAvatar] = await Promise.all([
-            fetchImage(fundoUrl),
-            fetchImage(a).catch(() => fetchImage("https://cdn.discordapp.com/embed/avatars/0.png"))
-        ]);
-
+        // Carregar imagens primeiro
         const [imgFundo, imgAvatar] = await Promise.all([
-            loadImage(bufferFundo),
-            loadImage(bufferAvatar)
+            getImage(fundoUrl),
+            getImage(a).catch(() => getImage("https://cdn.discordapp.com/embed/avatars/0.png"))
         ]);
-
-        const canvas = createCanvas(1000, 600);
-        const ctx = canvas.getContext("2d");
 
         // 1. Desenhar Fundo
         ctx.drawImage(imgFundo, 0, 0, 1000, 600);
 
         // 2. Overlay Escuro
-        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(0, 300, 1000, 300);
 
         // 3. Avatar Circular
@@ -54,62 +51,66 @@ app.get("/perfil", async (req, res) => {
         ctx.drawImage(imgAvatar, 30, 330, 160, 160);
         ctx.restore();
 
-        // Borda do Avatar
+        // Borda branca do avatar
         ctx.strokeStyle = "white";
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // 4. Desenhar Textos (Forçando cor e fonte)
+        // 4. DESENHO DOS TEXTOS (Corrigido para aparecer sempre)
         ctx.fillStyle = "#FFFFFF";
-        ctx.textAlign = "left";
-
+        
         // Nome
-        ctx.font = "bold 45px sans-serif";
-        ctx.fillText(n.toUpperCase(), 220, 380);
+        ctx.font = "bold 50px Arial, sans-serif";
+        ctx.fillText(n.toUpperCase().substring(0, 15), 220, 380);
 
-        // Informações
-        ctx.font = "25px sans-serif";
+        // ID e IENE
+        ctx.font = "28px Arial, sans-serif";
         ctx.fillText(`ID: ${i}`, 220, 430);
-        ctx.fillText(`IENE: ${ie}`, 220, 470);
+        ctx.fillText(`IENE: ${ie}`, 220, 475);
 
         // Level e XP
-        ctx.font = "bold 35px sans-serif";
+        ctx.font = "bold 40px Arial, sans-serif";
         ctx.fillText("LEVEL", 650, 390);
         ctx.fillText("XP", 860, 390);
 
-        ctx.font = "bold 60px sans-serif";
+        ctx.font = "bold 65px Arial, sans-serif";
         ctx.fillText(l, 690, 470);
 
-        ctx.font = "24px sans-serif";
-        ctx.fillText(`${x} / ${m}`, 790, 470);
+        ctx.font = "26px Arial, sans-serif";
+        ctx.fillText(`${x}/${m}`, 790, 470);
 
-        // 5. Barra de XP
-        const porcentagem = Math.min(Number(x) / Number(m), 1) * 280;
+        // 5. BARRA DE XP
+        const larguraMaxima = 280;
+        const porcentagem = Math.min(Number(x) / Number(m), 1) * larguraMaxima;
+
+        // Fundo da barra
         ctx.fillStyle = "#2b2b2b";
         ctx.beginPath();
-        ctx.roundRect(650, 510, 280, 25, 12);
+        ctx.roundRect(650, 520, larguraMaxima, 25, 12);
         ctx.fill();
 
+        // Progresso
         ctx.fillStyle = "#00ff88";
         ctx.beginPath();
-        ctx.roundRect(650, 510, porcentagem, 25, 12);
+        ctx.roundRect(650, 520, porcentagem, 25, 12);
         ctx.fill();
 
-        // 6. Sobre Mim
+        // 6. SOBRE MIM
         ctx.fillStyle = "white";
-        ctx.font = "bold 35px sans-serif";
-        ctx.fillText("SOBRE MIM", 30, 545);
+        ctx.font = "bold 40px Arial, sans-serif";
+        ctx.fillText("SOBRE MIM", 30, 555);
         
-        ctx.font = "22px sans-serif";
-        ctx.fillText(s, 30, 580);
+        ctx.font = "24px Arial, sans-serif";
+        ctx.fillText(s.substring(0, 50), 30, 595);
 
-        const bufferFinal = canvas.toBuffer("image/png");
+        // Finalizar imagem
+        const buffer = canvas.toBuffer("image/png");
         res.setHeader("Content-Type", "image/png");
-        res.status(200).send(bufferFinal);
+        res.send(buffer);
 
     } catch (err) {
-        console.error("ERRO NA API:", err);
-        res.status(500).send("Erro ao gerar imagem");
+        console.error(err);
+        res.status(500).send("Erro Interno");
     }
 });
 
