@@ -8,6 +8,10 @@
     {
       "src": "level/index.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "ship/index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -18,6 +22,10 @@
     {
       "src": "/level",
       "dest": "level/index.js"
+    },
+    {
+      "src": "/ship",
+      "dest": "ship/index.js"
     },
     {
       "src": "/(.*)",
