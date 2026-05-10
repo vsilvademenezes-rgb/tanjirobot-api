@@ -48,43 +48,43 @@ app.get("/level", async (req, res) => {
 
         // Fundo preto
         ctx.fillStyle = "#111111";
-        ctx.fillRect(0, 0, 900, 200);
+        ctx.fillRect(0, 0, 1050, 300);
 
         const fonte = fontCarregada ? "Roboto" : "serif";
 
         // Nome grande à esquerda
         ctx.fillStyle = "white";
-        ctx.font = `bold 60px ${fonte}`;
+        ctx.font = `bold 80px ${fonte}`;
         ctx.textAlign = "left";
-        ctx.fillText(n, 30, 90);
+        ctx.fillText(n, 40, 130);
 
         // XP e Level
-        ctx.font = `24px ${fonte}`;
+        ctx.font = `30px ${fonte}`;
         ctx.fillStyle = "#aaaaaa";
-        ctx.fillText(`${x} / ${m} xp`, 30, 140);
+        ctx.fillText(`${x} / ${m} xp`, 40, 200);
 
         ctx.textAlign = "right";
-        ctx.fillText(`Level ${l}`, 670, 140);
+        ctx.fillText(`Level ${l}`, 780, 200);
 
         // Barra de XP
         const xpAtual = Number(String(x).replace(/\D/g, '')) || 0;
         const xpMax = Number(String(m).replace(/\D/g, '')) || 1;
-        const larguraBarra = Math.min(xpAtual / xpMax, 1) * 640;
+        const larguraBarra = Math.min(xpAtual / xpMax, 1) * 740;
 
         ctx.fillStyle = "#2b2b2b";
         ctx.beginPath();
-        ctx.roundRect(30, 155, 640, 20, 10);
+        ctx.roundRect(40, 225, 740, 25, 12);
         ctx.fill();
 
         if (larguraBarra > 0) {
             ctx.fillStyle = "#00ff88";
             ctx.beginPath();
-            ctx.roundRect(30, 155, larguraBarra, 20, 10);
+            ctx.roundRect(40, 225, larguraBarra, 25, 12);
             ctx.fill();
         }
 
         // Avatar quadrado à direita
-        ctx.drawImage(imgAvatar, 710, 10, 180, 180);
+        ctx.drawImage(imgAvatar, 760, 10, 280, 280);
 
         res.setHeader("Content-Type", "image/png");
         res.send(canvas.toBuffer("image/png"));
