@@ -8,6 +8,7 @@
   "dependencies": {
     "@napi-rs/canvas": "^0.1.65",
     "express": "^4.19.2",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "axios": "^1.6.0"
   }
 }
