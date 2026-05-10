@@ -1,9 +1,9 @@
+
 const express = require("express");
 const { createCanvas, loadImage, GlobalFonts } = require("@napi-rs/canvas");
 
 const app = express();
 
-// Fonte embutida via CDN do jsDelivr (mais confiável na Vercel)
 let fontCarregada = false;
 
 async function carregarFonte() {
@@ -20,7 +20,6 @@ async function carregarFonte() {
     }
 }
 
-// Pré-carrega a fonte ao iniciar
 carregarFonte();
 
 app.get("/perfil", async (req, res) => {
@@ -64,11 +63,11 @@ app.get("/perfil", async (req, res) => {
         ctx.lineWidth = 6;
         ctx.stroke();
 
-        // Verifica se a fonte foi carregada, senão usa fallback
         const fonte = fontCarregada ? "Roboto" : "serif";
 
         ctx.fillStyle = "white";
         
+        ctx.textAlign = "left";
         ctx.font = `bold 50px ${fonte}`;
         ctx.fillText(n.toUpperCase(), 220, 380);
 
@@ -76,14 +75,21 @@ app.get("/perfil", async (req, res) => {
         ctx.fillText(`ID: ${i}`, 220, 430);
         ctx.fillText(`IENE: ${ie}`, 220, 475);
 
+        // LEVEL centralizado na coluna 710
+        ctx.textAlign = "center";
         ctx.font = `bold 35px ${fonte}`;
-        ctx.fillText("LEVEL", 650, 390);
-        ctx.fillText("XP", 860, 390);
-
+        ctx.fillText("LEVEL", 710, 390);
         ctx.font = `bold 65px ${fonte}`;
-        ctx.fillText(l, 690, 470);
+        ctx.fillText(l, 710, 470);
+
+        // XP centralizado na coluna 870
+        ctx.font = `bold 35px ${fonte}`;
+        ctx.fillText("XP", 870, 390);
         ctx.font = `24px ${fonte}`;
-        ctx.fillText(`${x}/${m}`, 790, 470);
+        ctx.fillText(`${x}/${m}`, 870, 470);
+
+        // Resetar alinhamento
+        ctx.textAlign = "left";
 
         const xpAtual = Number(String(x).replace(/\D/g, '')) || 0;
         const xpMax = Number(String(m).replace(/\D/g, '')) || 1;
