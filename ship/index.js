@@ -56,10 +56,9 @@ app.get("/ship", async (req, res) => {
             return await loadImage(b);
         }
 
-        const [imgA1, imgA2, imgNezuko] = await Promise.all([
+        const [imgA1, imgA2] = await Promise.all([
             getImg(a1).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/0.png")),
-            getImg(a2).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/1.png")),
-            getImg("https://i.postimg.cc/02Pz1nZx/1778398183228.png")
+            getImg(a2).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/1.png"))
         ]);
 
         // Fundo gradiente
@@ -106,10 +105,7 @@ app.get("/ship", async (req, res) => {
         ctx.arc(510, 100, 70, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Nezuko atrás do coração
-        ctx.drawImage(imgNezuko, 230, -10, 150, 210);
-
-        // Coração na frente da Nezuko
+        // Coração maior no meio
         ctx.save();
         ctx.translate(305, 72);
         ctx.strokeStyle = "white";
@@ -123,7 +119,7 @@ app.get("/ship", async (req, res) => {
         ctx.stroke();
         ctx.restore();
 
-        // Porcentagem dentro do coração
+        // Porcentagem centralizada dentro do coração
         ctx.fillStyle = "white";
         ctx.font = `bold 24px ${fonte}`;
         ctx.textAlign = "center";
