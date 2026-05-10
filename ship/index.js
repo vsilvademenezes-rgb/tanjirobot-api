@@ -21,11 +21,11 @@ async function carregarFonte() {
 carregarFonte();
 
 function corDaBarra(p) {
-    if (p <= 20)  return "#888888"; // cinza
-    if (p <= 40)  return "#aa88cc"; // roxo claro
-    if (p <= 60)  return "#cc88bb"; // lilás
-    if (p <= 80)  return "#ff99bb"; // rosa claro
-    return "#ff4488";               // rosa forte
+    if (p <= 20)  return "#888888";
+    if (p <= 40)  return "#aa88cc";
+    if (p <= 60)  return "#cc88bb";
+    if (p <= 80)  return "#ff99bb";
+    return "#ff4488";
 }
 
 function corDoBorda(p) {
@@ -61,24 +61,22 @@ app.get("/ship", async (req, res) => {
             getImg(a2).catch(() => getImg("https://cdn.discordapp.com/embed/avatars/1.png"))
         ]);
 
-        // Fundo gradiente misturando as cores dos avatares
+        // Fundo gradiente
         const grad = ctx.createLinearGradient(0, 0, 610, 0);
-        grad.addColorStop(0,    "#5588ff"); // azul lado esquerdo
-        grad.addColorStop(0.5,  "#cc66cc"); // mistura no meio
-        grad.addColorStop(1,    "#ff66aa"); // rosa lado direito
+        grad.addColorStop(0,    "#5588ff");
+        grad.addColorStop(0.5,  "#cc66cc");
+        grad.addColorStop(1,    "#ff66aa");
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.roundRect(0, 0, 610, 200, 20);
         ctx.fill();
 
-        // Overlay levemente transparente para suavizar
         ctx.fillStyle = "rgba(255,255,255,0.08)";
         ctx.beginPath();
         ctx.roundRect(0, 0, 610, 200, 20);
         ctx.fill();
 
         const fonte = fontCarregada ? "Roboto" : "serif";
-        const cor = corDaBarra(porcentagem);
         const corBorda = corDoBorda(porcentagem);
 
         // Avatar 1 - esquerda
@@ -107,37 +105,37 @@ app.get("/ship", async (req, res) => {
         ctx.arc(510, 100, 70, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Coração no meio
+        // Coração maior no meio
         ctx.save();
-        ctx.translate(305, 85);
+        ctx.translate(305, 72);
         ctx.strokeStyle = "white";
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.bezierCurveTo(-5, -20, -35, -20, -35, 5);
-        ctx.bezierCurveTo(-35, 25, 0, 45, 0, 45);
-        ctx.bezierCurveTo(0, 45, 35, 25, 35, 5);
-        ctx.bezierCurveTo(35, -20, 5, -20, 0, 0);
+        ctx.bezierCurveTo(-8, -35, -55, -35, -55, 10);
+        ctx.bezierCurveTo(-55, 40, 0, 72, 0, 72);
+        ctx.bezierCurveTo(0, 72, 55, 40, 55, 10);
+        ctx.bezierCurveTo(55, -35, 8, -35, 0, 0);
         ctx.stroke();
         ctx.restore();
 
-        // Porcentagem dentro do coração
+        // Porcentagem centralizada dentro do coração
         ctx.fillStyle = "white";
-        ctx.font = `bold 22px ${fonte}`;
+        ctx.font = `bold 24px ${fonte}`;
         ctx.textAlign = "center";
-        ctx.fillText(`${porcentagem}%`, 305, 98);
+        ctx.fillText(`${porcentagem}%`, 305, 108);
 
-        // Barra de compatibilidade embaixo do coração
+        // Barra de compatibilidade
         const barraTamanho = (porcentagem / 100) * 100;
         ctx.fillStyle = "rgba(0,0,0,0.3)";
         ctx.beginPath();
-        ctx.roundRect(255, 148, 100, 12, 6);
+        ctx.roundRect(255, 162, 100, 12, 6);
         ctx.fill();
 
         if (barraTamanho > 0) {
             ctx.fillStyle = corBorda;
             ctx.beginPath();
-            ctx.roundRect(255, 148, barraTamanho, 12, 6);
+            ctx.roundRect(255, 162, barraTamanho, 12, 6);
             ctx.fill();
         }
 
