@@ -1,12 +1,11 @@
 const express = require("express");
 const sharp = require("sharp");
+const axios = require("axios"); // Adicione o axios para baixar as imagens
 
 const app = express();
 
 app.get("/perfil.png", async (req, res) => {
-
     try {
-
         const {
             n = "Membro",
             ie = "0",
@@ -18,201 +17,72 @@ app.get("/perfil.png", async (req, res) => {
             a = "https://cdn.discordapp.com/embed/avatars/0.png"
         } = req.query;
 
-        const porcentagem =
-            Math.min(
-                Number(x) / Number(m),
-                1
-            ) * 280;
+        // 1. FUNÇÃO PARA TRANSFORMAR IMAGEM EM BASE64
+        const getBase64 = async (url) => {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            return `data:${response.headers["content-type"]};base64,${Buffer.from(response.data).toString('base64')}`;
+        };
+
+        // Baixando o fundo e o avatar (evita o bug de imagem sumida)
+        const fundoUrl = "https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg";
+        const [fundoBase64, avatarBase64] = await Promise.all([
+            getBase64(fundoUrl),
+            getBase64(a)
+        ]);
+
+        const porcentagem = Math.min(Number(x) / Number(m), 1) * 280;
 
         const svg = `
 <svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
+    <image href="${fundoBase64}" width="1000" height="600" preserveAspectRatio="xMidYMid slice" />
 
-    <!-- FUNDO -->
-    <image
-        href="https://i.postimg.cc/Sx6rgWhp/In-Shot-20260506-050947511.jpg"
-        width="1000"
-        height="600"
-    />
+    <rect x="0" y="300" width="1000" height="300" fill="black" fill-opacity="0.65" />
 
-    <!-- OVERLAY -->
-    <rect
-        x="0"
-        y="300"
-        width="1000"
-        height="300"
-        fill="rgba(0,0,0,0.65)"
-    />
-
-    <!-- AVATAR -->
     <defs>
         <clipPath id="avatarClip">
-            <circle cx="110" cy="400" r="80"/>
+            <circle cx="110" cy="410" r="80"/>
         </clipPath>
     </defs>
 
     <image
-        href="${a}"
+        href="${avatarBase64}"
         x="30"
-        y="320"
+        y="330"
         width="160"
         height="160"
         clip-path="url(#avatarClip)"
     />
 
-    <!-- BORDA -->
-    <circle
-        cx="110"
-        cy="400"
-        r="80"
-        fill="none"
-        stroke="white"
-        stroke-width="6"
-    />
+    <circle cx="110" cy="410" r="80" fill="none" stroke="white" stroke-width="6" />
 
-    <!-- NOME -->
-    <text
-        x="220"
-        y="380"
-        fill="white"
-        font-size="48"
-        font-family="Arial"
-        font-weight="bold"
-    >
-        ${n.toUpperCase()}
-    </text>
+    <text x="220" y="380" fill="white" font-size="45" font-family="sans-serif" font-weight="bold">${n.toUpperCase()}</text>
+    <text x="220" y="430" fill="white" font-size="25" font-family="sans-serif">ID: ${i}</text>
+    <text x="220" y="470" fill="white" font-size="25" font-family="sans-serif">IENE: ${ie}</text>
 
-    <!-- INFO -->
-    <text
-        x="220"
-        y="430"
-        fill="white"
-        font-size="28"
-        font-family="Arial"
-    >
-        ID: ${i}
-    </text>
+    <text x="650" y="390" fill="white" font-size="35" font-family="sans-serif" font-weight="bold">LEVEL</text>
+    <text x="690" y="470" fill="white" font-size="60" font-family="sans-serif" font-weight="bold">${l}</text>
+    
+    <text x="860" y="390" fill="white" font-size="35" font-family="sans-serif" font-weight="bold">XP</text>
+    <text x="790" y="470" fill="white" font-size="24" font-family="sans-serif">${x} / ${m}</text>
 
-    <text
-        x="220"
-        y="475"
-        fill="white"
-        font-size="28"
-        font-family="Arial"
-    >
-        IENE: ${ie}
-    </text>
+    <rect x="650" y="510" width="280" height="25" rx="12" fill="#2b2b2b" />
+    <rect x="650" y="510" width="${porcentagem}" height="25" rx="12" fill="#00ff88" />
 
-    <!-- LEVEL -->
-    <text
-        x="650"
-        y="390"
-        fill="white"
-        font-size="40"
-        font-family="Arial"
-        font-weight="bold"
-    >
-        LEVEL
-    </text>
+    <text x="30" y="545" fill="white" font-size="35" font-family="sans-serif" font-weight="bold">SOBRE MIM</text>
+    <text x="30" y="580" fill="white" font-size="22" font-family="sans-serif">${s}</text>
+</svg>`;
 
-    <text
-        x="700"
-        y="470"
-        fill="white"
-        font-size="65"
-        font-family="Arial"
-        font-weight="bold"
-    >
-        ${l}
-    </text>
+        const png = await sharp(Buffer.from(svg))
+            .png()
+            .toBuffer();
 
-    <!-- XP -->
-    <text
-        x="860"
-        y="390"
-        fill="white"
-        font-size="40"
-        font-family="Arial"
-        font-weight="bold"
-    >
-        XP
-    </text>
-
-    <text
-        x="790"
-        y="470"
-        fill="white"
-        font-size="26"
-        font-family="Arial"
-    >
-        ${x} / ${m}
-    </text>
-
-    <!-- BARRA XP -->
-    <rect
-        x="650"
-        y="520"
-        width="280"
-        height="25"
-        rx="10"
-        fill="#2b2b2b"
-    />
-
-    <rect
-        x="650"
-        y="520"
-        width="${porcentagem}"
-        height="25"
-        rx="10"
-        fill="#00ff88"
-    />
-
-    <!-- SOBRE -->
-    <text
-        x="20"
-        y="555"
-        fill="white"
-        font-size="40"
-        font-family="Arial"
-        font-weight="bold"
-    >
-        SOBRE MIM
-    </text>
-
-    <text
-        x="20"
-        y="590"
-        fill="white"
-        font-size="24"
-        font-family="Arial"
-    >
-        ${s}
-    </text>
-
-</svg>
-`;
-
-        // CONVERTER SVG PRA PNG REAL
-        const png = await sharp(
-            Buffer.from(svg)
-        )
-        .png()
-        .toBuffer();
-
-        res.setHeader(
-            "Content-Type",
-            "image/png"
-        );
-
-        res.send(png);
+        res.setHeader("Content-Type", "image/png");
+        res.status(200).send(png);
 
     } catch (err) {
-
-        console.log(err);
-
-        res.status(500).send("Erro");
-
+        console.error(err);
+        res.status(500).send("Erro ao gerar imagem");
     }
-
 });
 
 module.exports = app;
