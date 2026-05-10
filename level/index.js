@@ -33,7 +33,7 @@ app.get("/level", async (req, res) => {
 
         await carregarFonte();
 
-        const canvas = createCanvas(900, 200);
+        const canvas = createCanvas(1050, 300);
         const ctx = canvas.getContext("2d");
 
         async function getImg(url) {
