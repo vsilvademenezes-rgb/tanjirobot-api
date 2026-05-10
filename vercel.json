@@ -4,12 +4,20 @@
     {
       "src": "index.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "level/index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/perfil",
       "dest": "index.js"
+    },
+    {
+      "src": "/level",
+      "dest": "level/index.js"
     },
     {
       "src": "/(.*)",
