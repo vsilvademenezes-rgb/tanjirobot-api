@@ -1,35 +1,16 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "perfil/index.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "level/index.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "ship/index.js",
-      "use": "@vercel/node"
-    }
+    { "src": "index.js", "use": "@vercel/node" },
+    { "src": "level/index.js", "use": "@vercel/node" },
+    { "src": "ship/index.js", "use": "@vercel/node" },
+    { "src": "rpg/index.js", "use": "@vercel/node" }
   ],
   "routes": [
-    {
-      "src": "/perfil",
-      "dest": "perfil/index.js"
-    },
-    {
-      "src": "/level",
-      "dest": "level/index.js"
-    },
-    {
-      "src": "/ship",
-      "dest": "ship/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "index.js"
-    }
+    { "src": "/perfil", "dest": "index.js" },
+    { "src": "/level", "dest": "level/index.js" },
+    { "src": "/ship", "dest": "ship/index.js" },
+    { "src": "/rpg/(.*)", "dest": "rpg/index.js" },
+    { "src": "/(.*)", "dest": "index.js" }
   ]
 }
