@@ -5,7 +5,8 @@
     { "src": "level/index.js", "use": "@vercel/node" },
     { "src": "ship/index.js", "use": "@vercel/node" },
     { "src": "rpg/index.js", "use": "@vercel/node" },
-    { "src": "entrada/index.js", "use": "@vercel/node" }
+    { "src": "entrada/index.js", "use": "@vercel/node" },
+    { "src": "rank/index.js", "use": "@vercel/node" }
   ],
   "routes": [
     { "src": "/perfil", "dest": "index.js" },
@@ -14,6 +15,7 @@
     { "src": "/rpg/(.*)", "dest": "rpg/index.js" },
     { "src": "/entrada", "dest": "entrada/index.js" },
     { "src": "/saida", "dest": "entrada/index.js" },
+    { "src": "/rank", "dest": "rank/index.js" },
     { "src": "/(.*)", "dest": "index.js" }
   ]
 }
